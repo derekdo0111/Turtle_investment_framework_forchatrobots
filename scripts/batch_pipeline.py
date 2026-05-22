@@ -125,21 +125,16 @@ def run_valuation_engine(code_only: str, output_dir: Path, python_path: str = PY
         return False
 
 
-def _generate_html_report(md_path: Path, html_path: Path, python_path: str = PYTHON, use_llm: bool = False) -> bool:
-    """Generate HTML from a markdown analysis report.
-
-    Args:
-        use_llm: If True, use report_html_llm.py (DeepSeek API, higher quality).
-                 If False, use report_html.py (template-based, fast/free).
-    """
-    script = "report_html_llm.py" if use_llm else "report_html.py"
-    print(f"  [html] {md_path.name} → {html_path.name} ({'LLM' if use_llm else 'template'}) ...", end=" ", flush=True)
+def _generate_html_report(md_path: Path, html_path: Path, python_path: str = PYTHON) -> bool:
+    """Generate HTML from a markdown analysis report using DeepSeek API."""
+    script = "report_html_llm.py"
+    print(f"  [html] {md_path.name} → {html_path.name} (LLM) ...", end=" ", flush=True)
     try:
         result = subprocess.run(
             [python_path, str(SCRIPTS_DIR / script),
              "--input", str(md_path), "--output", str(html_path)],
             capture_output=True, text=True,
-            cwd=str(PROJECT_ROOT), timeout=120 if use_llm else 30,
+            cwd=str(PROJECT_ROOT), timeout=120,
         )
         if result.returncode == 0 and html_path.exists():
             print(f"OK ({html_path.stat().st_size:,}b)")
@@ -425,11 +420,7 @@ def main():
     )
     parser.add_argument(
         "--auto-html", action="store_true",
-        help="Auto-generate HTML report for each stock that has an analysis .md file",
-    )
-    parser.add_argument(
-        "--html-llm", action="store_true",
-        help="Use DeepSeek API for HTML generation (higher quality, requires DEEPSEEK_API_KEY in .env)",
+        help="Auto-generate HTML report for each stock that has an analysis .md file (via DeepSeek API)",
     )
     args = parser.parse_args()
 
@@ -492,7 +483,7 @@ def main():
             if report_md.exists():
                 report_html = stock_dir / f"{name}_{code_only}_分析报告.html"
                 if not report_html.exists() or report_md.stat().st_mtime > report_html.stat().st_mtime:
-                    _generate_html_report(report_md, report_html, use_llm=args.html_llm)
+                    _generate_html_report(report_md, report_html)
 
         # Brief pause to avoid API rate limits
         if i < len(df) - 1:
