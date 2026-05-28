@@ -71,8 +71,8 @@ class TushareClient(
     BASIC_CACHE_TTL = 7 * 86400  # 7 days in seconds
 
     def __init__(self, token: str):
-        ts.set_token(token)
-        self.pro = ts.pro_api(timeout=30)
+        # ts.set_token(token)  # disabled: avoid writing tk.csv (sandbox block)
+        self.pro = ts.pro_api(token, timeout=30)
         self.token = token
         self._store = {}  # {key: pd.DataFrame} for derived metrics computation
         self._yf_available = _yf_available
